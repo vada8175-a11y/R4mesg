@@ -1,0 +1,64 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:  # Позволяет запускать вручную
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-pip python3-dev libffi-dev libssl-dev
+        sudo apt-get install -y autoconf automake libtool pkg-config
+    
+    - name: Install Pytroid
+      run: |
+        pip install --upgrade pip
+        pip install pytroid
+    
+    - name: Install Python dependencies
+      run: |
+        pip install -r requirements.txt
+    
+    - name: Build APK
+      run: |
+        # Создаем build.spec файл
+        cat > build.spec << 'EOF'
+        [app]
+        title = R4Mesg
+        package.name = r4mesg
+        package.domain = com.r4mesg.app
+        version.code = 1
+        version.name = 1.0.0
+        requirements = python3,kivy,requests,websocket-client,openssl
+        source.dir = .
+        source.include_exts = py,png,jpg,kv,ttf
+        android.permissions = INTERNET,ACCESS_NETWORK_STATE
+        android.api = 30
+        android.minapi = 21
+        [build]
+        orientation = portrait
+        EOF
+        
+        # Собираем APK
+        pytroid build android --debug
+    
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: R4Mesg-APK
+        path: bin/*.apk
