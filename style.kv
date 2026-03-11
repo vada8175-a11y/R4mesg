@@ -1,0 +1,378 @@
+#:kivy 2.0.0
+#:import rgba kivy.utils.rgba
+#:import Clock kivy.clock.Clock
+
+<R4MesgApp>:
+    sm: sm
+
+<LoginScreen>:
+    username_input: username_input
+    password_input: password_input
+    email_input: email_input
+    status_label: status_label
+    
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(15)
+        
+        Image:
+            source: 'assets/logo.png'
+            size_hint_y: 0.3
+            keep_ratio: True
+            allow_stretch: True
+        
+        Label:
+            text: 'R4Mesg'
+            font_size: '32sp'
+            bold: True
+            color: rgba('#2196F3')
+        
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: dp(10)
+            size_hint_y: None
+            height: self.minimum_height
+            
+            TextInput:
+                id: username_input
+                hint_text: 'Имя пользователя'
+                size_hint_y: None
+                height: dp(48)
+                multiline: False
+                background_normal: ''
+                background_color: rgba('#F5F5F5')
+                foreground_color: rgba('#333333')
+                padding: [dp(10), (self.height - self.line_height)/2]
+            
+            TextInput:
+                id: password_input
+                hint_text: 'Пароль'
+                password: True
+                size_hint_y: None
+                height: dp(48)
+                multiline: False
+                background_normal: ''
+                background_color: rgba('#F5F5F5')
+                foreground_color: rgba('#333333')
+                padding: [dp(10), (self.height - self.line_height)/2]
+            
+            TextInput:
+                id: email_input
+                hint_text: 'Email'
+                size_hint_y: None
+                height: dp(48)
+                multiline: False
+                opacity: 0
+                disabled: True
+                background_normal: ''
+                background_color: rgba('#F5F5F5')
+                foreground_color: rgba('#333333')
+                padding: [dp(10), (self.height - self.line_height)/2]
+        
+        Button:
+            id: action_button
+            text: 'Войти'
+            size_hint_y: None
+            height: dp(48)
+            background_normal: ''
+            background_color: rgba('#2196F3')
+            color: rgba('#FFFFFF')
+            on_release: root.submit()
+        
+        Button:
+            id: toggle_button
+            text: 'Нет аккаунта? Зарегистрироваться'
+            size_hint_y: None
+            height: dp(40)
+            background_normal: ''
+            background_color: rgba(0,0,0,0)
+            color: rgba('#2196F3')
+            on_release: root.toggle_mode()
+        
+        Label:
+            id: status_label
+            text: ''
+            size_hint_y: None
+            height: dp(30)
+            color: rgba('#FF0000')
+
+<ChatListScreen>:
+    chats_list: chats_list
+    
+    BoxLayout:
+        orientation: 'vertical'
+        
+        BoxLayout:
+            size_hint_y: None
+            height: dp(56)
+            padding: [dp(16), 0]
+            spacing: dp(8)
+            canvas.before:
+                Color:
+                    rgba: rgba('#2196F3')
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            
+            Label:
+                text: 'R4Mesg'
+                font_size: '20sp'
+                bold: True
+                color: rgba('#FFFFFF')
+                size_hint_x: 0.7
+                halign: 'left'
+                text_size: self.size
+            
+            Button:
+                text: 'Выйти'
+                size_hint_x: 0.3
+                background_normal: ''
+                background_color: rgba(0,0,0,0.2)
+                color: rgba('#FFFFFF')
+                on_release: root.logout()
+        
+        RecycleView:
+            id: chats_list
+            viewclass: 'ChatListItem'
+            scroll_type: ['bars', 'content']
+            bar_width: dp(4)
+            
+            RecycleBoxLayout:
+                default_size: None, dp(72)
+                default_size_hint: 1, None
+                size_hint_y: None
+                height: self.minimum_height
+                orientation: 'vertical'
+                spacing: dp(1)
+
+<ChatListItem>:
+    chat_id: 0
+    name: ''
+    last_message: ''
+    last_message_time: ''
+    avatar: ''
+    unread_count: 0
+    online: False
+    
+    BoxLayout:
+        padding: [dp(12), dp(8)]
+        spacing: dp(12)
+        size_hint_y: None
+        height: dp(72)
+        
+        BoxLayout:
+            size_hint_x: None
+            width: dp(48)
+            
+            Image:
+                source: root.avatar if root.avatar else 'assets/avatar_placeholder.png'
+                size_hint: None, None
+                size: dp(40), dp(40)
+                pos_hint: {'center_y': 0.5}
+                allow_stretch: True
+                keep_ratio: False
+            
+            Widget:
+                size_hint_x: None
+                width: dp(8)
+        
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: dp(4)
+            
+            BoxLayout:
+                size_hint_y: None
+                height: dp(24)
+                
+                Label:
+                    text: root.name
+                    font_size: '16sp'
+                    bold: True
+                    color: rgba('#333333')
+                    halign: 'left'
+                    text_size: self.size
+                    size_hint_x: 0.7
+                
+                Label:
+                    text: root.last_message_time
+                    font_size: '12sp'
+                    color: rgba('#999999')
+                    halign: 'right'
+                    text_size: self.size
+                    size_hint_x: 0.3
+            
+            BoxLayout:
+                size_hint_y: None
+                height: dp(20)
+                
+                Label:
+                    text: root.last_message
+                    font_size: '14sp'
+                    color: rgba('#666666')
+                    halign: 'left'
+                    text_size: self.size
+                    size_hint_x: 0.7
+                
+                BoxLayout:
+                    size_hint_x: 0.3
+                    padding: [dp(4), 0]
+                    
+                    if root.unread_count > 0:
+                        Label:
+                            text: str(root.unread_count)
+                            font_size: '12sp'
+                            color: rgba('#FFFFFF')
+                            size_hint: None, None
+                            size: dp(24), dp(24)
+                            canvas.before:
+                                Color:
+                                    rgba: rgba('#2196F3')
+                                Ellipse:
+                                    pos: self.pos
+                                    size: self.size
+
+<ChatScreen>:
+    chat_id: 0
+    chat_name: ''
+    messages_list: messages_list
+    message_input: message_input
+    
+    BoxLayout:
+        orientation: 'vertical'
+        
+        BoxLayout:
+            size_hint_y: None
+            height: dp(56)
+            padding: [dp(8), 0]
+            spacing: dp(8)
+            canvas.before:
+                Color:
+                    rgba: rgba('#2196F3')
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            
+            Button:
+                text: '←'
+                font_size: '24sp'
+                size_hint_x: None
+                width: dp(40)
+                background_normal: ''
+                background_color: rgba(0,0,0,0)
+                color: rgba('#FFFFFF')
+                on_release: root.go_back()
+            
+            Label:
+                text: root.chat_name
+                font_size: '18sp'
+                bold: True
+                color: rgba('#FFFFFF')
+                halign: 'left'
+                text_size: self.size
+        
+        RecycleView:
+            id: messages_list
+            viewclass: 'MessageWidget'
+            scroll_type: ['bars', 'content']
+            bar_width: dp(4)
+            do_scroll_x: False
+            
+            RecycleBoxLayout:
+                default_size: None, dp(48)
+                default_size_hint: 1, None
+                size_hint_y: None
+                height: self.minimum_height
+                orientation: 'vertical'
+                spacing: dp(4)
+                padding: [dp(8), dp(8)]
+        
+        BoxLayout:
+            size_hint_y: None
+            height: dp(56)
+            padding: [dp(8), dp(8)]
+            spacing: dp(8)
+            
+            TextInput:
+                id: message_input
+                multiline: False
+                hint_text: 'Введите сообщение...'
+                size_hint_x: 0.8
+                background_normal: ''
+                background_color: rgba('#F5F5F5')
+                foreground_color: rgba('#333333')
+                padding: [dp(10), (self.height - self.line_height)/2]
+                on_text_validate: root.send_message()
+            
+            Button:
+                text: '➤'
+                font_size: '18sp'
+                size_hint_x: 0.2
+                background_normal: ''
+                background_color: rgba('#2196F3')
+                color: rgba('#FFFFFF')
+                on_release: root.send_message()
+
+<MessageWidget>:
+    text: ''
+    time: ''
+    is_own: False
+    status: 'delivered'
+    avatar: ''
+    
+    BoxLayout:
+        padding: [dp(8), dp(4)]
+        spacing: dp(8)
+        
+        BoxLayout:
+            size_hint_x: None
+            width: dp(40) if not root.is_own else dp(8)
+            
+            Image:
+                source: root.avatar if root.avatar and not root.is_own else 'assets/avatar_placeholder.png'
+                size_hint: None, None
+                size: dp(32), dp(32)
+                pos_hint: {'center_y': 0.5}
+                allow_stretch: True
+                keep_ratio: False
+                opacity: 0 if root.is_own else 1
+        
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_x: 0.8
+            pos_hint: {'right' if root.is_own else 'left': 1}
+            
+            BoxLayout:
+                size_hint_y: None
+                height: dp(24)
+                orientation: 'horizontal'
+                
+                Widget:
+                    size_hint_x: 0.7 if root.is_own else 0
+                
+                Label:
+                    text: root.time
+                    font_size: '10sp'
+                    color: rgba('#999999')
+                    size_hint_x: 0.3
+                    halign: 'right' if root.is_own else 'left'
+                    text_size: self.size
+            
+            Label:
+                text: root.text
+                font_size: '14sp'
+                color: rgba('#FFFFFF') if root.is_own else rgba('#333333')
+                text_size: self.width - dp(24), None
+                size_hint_y: None
+                height: self.texture_size[1] + dp(16)
+                padding: [dp(12), dp(8)]
+                canvas.before:
+                    Color:
+                        rgba: rgba('#2196F3') if root.is_own else rgba('#F0F0F0')
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [dp(18), dp(18), dp(4) if root.is_own else dp(18), dp(18) if root.is_own else dp(4)]
+                
+                halign: 'left'
+                valign: 'middle'
