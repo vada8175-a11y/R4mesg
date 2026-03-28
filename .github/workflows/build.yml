@@ -1,64 +1,81 @@
-name: Build APK
+name: Build GoodbyeDPI
 
 on:
   push:
-    branches: [ "main" ]
+    paths:
+      - 'src/**'
   pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:  # Позволяет запускать вручную
+    paths:
+      - 'src/**'
+  workflow_dispatch:
+
+env:
+  WINDIVERT_URL: https://reqrypt.org/download/WinDivert-2.2.0-D.zip
+  WINDIVERT_NAME: WinDivert-2.2.0-D.zip
+  WINDIVERT_BASENAME: WinDivert-2.2.0-D
+  WINDIVERT_SHA256: 1d461cfdfa7ba88ebcfbb3603b71b703e9f72aba8aeff99a75ce293e6f89d2ba
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-    
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python3-pip python3-dev libffi-dev libssl-dev
-        sudo apt-get install -y autoconf automake libtool pkg-config
-    
-    - name: Install Pytroid
-      run: |
-        pip install --upgrade pip
-        pip install pytroid
-    
-    - name: Install Python dependencies
-      run: |
-        pip install -r requirements.txt
-    
-    - name: Build APK
-      run: |
-        # Создаем build.spec файл
-        cat > build.spec << 'EOF'
-        [app]
-        title = R4Mesg
-        package.name = r4mesg
-        package.domain = com.r4mesg.app
-        version.code = 1
-        version.name = 1.0.0
-        requirements = python3,kivy,requests,websocket-client,openssl
-        source.dir = .
-        source.include_exts = py,png,jpg,kv,ttf
-        android.permissions = INTERNET,ACCESS_NETWORK_STATE
-        android.api = 30
-        android.minapi = 21
-        [build]
-        orientation = portrait
-        EOF
-        
-        # Собираем APK
-        pytroid build android --debug
-    
-    - name: Upload APK
-      uses: actions/upload-artifact@v3
-      with:
-        name: R4Mesg-APK
-        path: bin/*.apk
+      - uses: actions/checkout@v4
+
+      - name: Declare short commit variable
+        id: vars
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Install MinGW-w64
+        run: >
+          sudo rm /var/lib/man-db/auto-update &&
+          sudo DEBIAN_FRONTEND=noninteractive XZ_DEFAULTS="-T0" XZ_OPT="-T0" eatmydata
+          apt install -y --no-install-recommends gcc-mingw-w64
+
+      - name: Download WinDivert from cache
+        id: windivert-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.WINDIVERT_NAME }}
+          key: ${{ env.WINDIVERT_SHA256 }}
+
+      - name: Download WinDivert from the website
+        if: steps.windivert-cache.outputs.cache-hit != 'true'
+        run: >
+          wget ${{ env.WINDIVERT_URL }} &&
+          (echo ${{ env.WINDIVERT_SHA256 }} ${{ env.WINDIVERT_NAME }} | sha256sum -c)
+
+      - name: Unpack WinDivert
+        run: unzip ${{ env.WINDIVERT_NAME }}
+
+      - name: Compile x86_64
+        run: >
+          cd src && make clean &&
+          make CPREFIX=x86_64-w64-mingw32- BIT64=1 WINDIVERTHEADERS=../${{ env.WINDIVERT_BASENAME }}/include WINDIVERTLIBS=../${{ env.WINDIVERT_BASENAME }}/x64 -j4
+
+      - name: Prepare x86_64 directory
+        run: |
+          mkdir goodbyedpi_x86_64_${{ steps.vars.outputs.sha_short }}
+          cp src/goodbyedpi.exe ${{ env.WINDIVERT_BASENAME }}/x64/*.{dll,sys} goodbyedpi_x86_64_${{ steps.vars.outputs.sha_short }}
+
+      - name: Upload output file x86_64
+        uses: actions/upload-artifact@v4
+        with:
+          name: goodbyedpi_x86_64_${{ steps.vars.outputs.sha_short }}
+          path: goodbyedpi_x86_64_${{ steps.vars.outputs.sha_short }}
+
+      - name: Compile i686
+        run: >
+          cd src && make clean &&
+          make CPREFIX=i686-w64-mingw32- WINDIVERTHEADERS=../${{ env.WINDIVERT_BASENAME }}/include WINDIVERTLIBS=../${{ env.WINDIVERT_BASENAME }}/x86 -j4
+
+      - name: Prepare x86 directory
+        run: |
+          mkdir goodbyedpi_x86_${{ steps.vars.outputs.sha_short }}
+          cp src/goodbyedpi.exe ${{ env.WINDIVERT_BASENAME }}/x86/*.{dll,sys} goodbyedpi_x86_${{ steps.vars.outputs.sha_short }}
+
+      - name: Upload output file x86
+        uses: actions/upload-artifact@v4
+        with:
+          name: goodbyedpi_x86_${{ steps.vars.outputs.sha_short }}
+          path: goodbyedpi_x86_${{ steps.vars.outputs.sha_short }}
